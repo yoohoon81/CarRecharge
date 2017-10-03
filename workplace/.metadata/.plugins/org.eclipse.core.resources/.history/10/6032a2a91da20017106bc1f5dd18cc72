@@ -1,0 +1,99 @@
+package ScheduleSystem;
+
+import java.util.Date;
+import java.util.concurrent.ThreadLocalRandom;
+
+import jade.core.Agent;
+import jade.core.behaviours.CyclicBehaviour;
+
+public class CarAgent extends Agent implements CarAgentInterface {
+	//input
+	//public int MaxLoad;
+	//public int CurrentLoad;
+	//input
+	//public Date EarliestStartTime;
+	//input
+	//public Date LatestChargedTime;
+	
+	public int Id;
+	private int RequiredLoad;	
+	private int LoadToRecharge;	
+	private int Deadline;	
+	private int elapsedSeconds;
+	public CarAgent() {
+		registerO2AInterface(CarAgentInterface.class, this);	
+		elapsedSeconds = 0;
+	}
+	
+	protected void setup() {
+		
+		Object[] args = getArguments();
+		System.out.println("Starting up a CarAgent" + args[0]);
+		Id = Integer.parseInt(args[0].toString());
+		RequiredLoad = Integer.parseInt(args[1].toString());
+		LoadToRecharge = Integer.parseInt(args[1].toString());
+		Deadline = Integer.parseInt(args[1].toString());
+		//requiredLoad = ThreadLocalRandom.current().nextInt(100, 1000);
+//		CyclicBehaviour cb = new CyclicBehaviour(this) {
+//			public void action() {
+//				
+//				System.out.println("Action CyclicBehaviour of CarAgent " + args[0]);
+//				
+				// Spend currentload
+				//CurrentLoad -= 10; // TODO: value to be replaced with the one from configuration
+				
+				// TODO: Check if this car needs charging and send requirements and preferences to scheduling agent
+				
+				// TODO: Receive notifications and process it.
+				
+				
+//				try {
+//					Thread.sleep(3000);
+//				} catch (InterruptedException e) {
+//					// TODO Auto-generated catch block
+//					e.printStackTrace();
+//				}
+//			}
+//		};
+		
+//		addBehaviour(cb);
+	}
+
+
+	@Override
+	public int getRequiredLoad() {
+		return LoadToRecharge;
+	}
+
+	@Override
+	public int getId() {
+		return Id;
+	}
+
+	@Override
+	public void recharge() {
+		LoadToRecharge -= 1;
+		
+	}
+
+	@Override
+	public int ElapseSecond() {
+		return elapsedSeconds++;
+	}
+
+	@Override
+	public int getChargedPercent() {
+		if(RequiredLoad <= 0)
+			return 100;
+		
+		return (RequiredLoad - LoadToRecharge) * 100 / RequiredLoad;
+	}	
+
+	@Override
+	public void reset()
+	{
+		LoadToRecharge = RequiredLoad;
+		elapsedSeconds = 0;
+	}
+	
+}

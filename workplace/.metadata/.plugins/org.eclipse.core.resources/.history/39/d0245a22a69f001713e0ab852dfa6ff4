@@ -1,0 +1,12 @@
+package ScheduleSystem;
+
+public class Car
+{
+	Car(int id, int requiredLoad)
+	{
+		Id = id;
+		RequiredLoad = requiredLoad;
+	}
+	public int Id;
+	private int RequiredLoad;	
+}

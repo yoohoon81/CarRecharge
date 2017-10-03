@@ -1,0 +1,96 @@
+package ScheduleSystem;
+
+import java.awt.BorderLayout;
+import java.awt.EventQueue;
+
+import javax.swing.JFrame;
+import javax.swing.JPanel;
+import javax.swing.border.EmptyBorder;
+import javax.swing.table.DefaultTableModel;
+
+import java.awt.GridBagLayout;
+import javax.swing.JTextField;
+import java.awt.GridBagConstraints;
+import javax.swing.JTabbedPane;
+import java.awt.Insets;
+import javax.swing.JTable;
+import javax.swing.JScrollPane;
+import javax.swing.JButton;
+import java.awt.event.ActionListener;
+import java.util.ArrayList;
+import java.util.concurrent.ThreadLocalRandom;
+import java.awt.event.ActionEvent;
+import java.awt.Color;
+import javax.swing.border.BevelBorder;
+import javax.swing.BoxLayout;
+import org.eclipse.wb.swing.FocusTraversalOnArray;
+import java.awt.Component;
+
+public class Dashboard extends JFrame {
+	private JTable table;
+	private JTextField carNumberTextField;
+	private ArrayList<Car> cars;
+	
+	/**
+	 * Create the frame.
+	 */
+	public Dashboard() {
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setBounds(100, 100, 507, 490);
+		getContentPane().setLayout(null);
+		
+		JTabbedPane tabbedPane = new JTabbedPane(JTabbedPane.TOP);
+		tabbedPane.setBounds(0, 0, 479, 441);
+		getContentPane().add(tabbedPane);
+		
+		JPanel Settings = new JPanel();
+		tabbedPane.addTab("Settings", null, Settings, null);
+		
+		JPanel carsPanel = new JPanel();
+		tabbedPane.addTab("Cars", null, carsPanel, null);
+		//carsPanel.setLayout(new BoxLayout(carsPanel, BoxLayout.));
+		JPanel panelNorth = new JPanel();
+		carsPanel.add(panelNorth, BorderLayout.NORTH);
+		carNumberTextField = new JTextField();
+		carNumberTextField.setColumns(10);
+		panelNorth.add(carNumberTextField);
+		
+		JButton btnNewButton = new JButton("Generate cars");
+		panelNorth.add(btnNewButton);
+		
+		btnNewButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent arg0) {
+				System.out.println("clicked 1");
+				
+				int carNumber = Integer.parseInt(carNumberTextField.getText());
+				cars = new ArrayList<Car>();
+				for(int i = 0; i < carNumber; i++)
+				{
+					cars.add(new Car(i, ThreadLocalRandom.current().nextInt(100, 1000)));
+				}
+				System.out.println("clicked 2");
+				
+				UpdateUi();
+				System.out.println("clicked 3");
+				
+			}
+		});
+		
+		JPanel scrollPane = new JPanel();
+		carsPanel.add(scrollPane, BorderLayout.CENTER);
+		
+		table = new JTable();
+		scrollPane.add(table);
+		table.setBackground(Color.GREEN);
+		carsPanel.setFocusTraversalPolicy(new FocusTraversalOnArray(new Component[]{btnNewButton, scrollPane, table, carNumberTextField}));
+	}
+	
+	public void UpdateUi()
+	{		
+		DefaultTableModel model = (DefaultTableModel) table.getModel();
+		for(int i = 0; i < cars.size(); i++)
+		{
+			model.addRow(new Object[] { cars.get(i).id, cars.get(i).requiredLoad });
+		}
+	}
+}

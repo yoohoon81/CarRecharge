@@ -1,0 +1,67 @@
+package ScheduleSystem;
+
+import java.util.ArrayList;
+
+import com.sun.glass.ui.View.Capability;
+
+import jade.core.Agent;
+import jade.core.behaviours.Behaviour;
+import jade.core.behaviours.WakerBehaviour;
+import jade.core.behaviours.TickerBehaviour;
+import jade.core.behaviours.*;
+
+/*********************************************************
+ * 
+ * Creator: Brad Yoo 
+ * Date: 15/09/2017 
+ * Description: In charge of managing Agents
+ * 
+*********************************************************/
+public class SchedulingAgent extends Agent implements ISchedulingAgent {
+	
+	ArrayList<Bay> bays;
+
+	public SchedulingAgent()
+	{
+		registerO2AInterface(ISchedulingAgent.class, this);		
+	}
+	protected void setup() {
+		System.out.println(getLocalName() + ": I have been created");
+		
+		//numberOfBaysTextField.getText(), bayCapacityTextField.getText(), outletPerBayTextField.getText()
+		Object[] args = getArguments();
+		int numberOfBays = Integer.parseInt(args[0].toString());
+		int bayCapacity = Integer.parseInt(args[1].toString());
+		int outletPerBay = Integer.parseInt(args[2].toString());
+		
+		bays = new ArrayList<Bay>();
+		for(int i = 0; i < numberOfBays; i++) { bays.add(new Bay(i, bayCapacity, outletPerBay)); }
+		
+		CyclicBehaviour cb = new CyclicBehaviour(this) {
+			public void action() {
+				
+				System.out.println("Action CyclicBehaviour of SchedulingAgent.");
+				
+				// TODO: Collect (Receive) requirements and preferences from car agents
+				
+				// TODO: Schedule
+				
+				// TODO: Send notification to car agent
+				
+				try {
+					Thread.sleep(3000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		};
+		
+		//addBehaviour(cb);
+	}
+
+	@Override
+	public ArrayList<Bay> GetBays() {
+		return bays;
+	}
+}

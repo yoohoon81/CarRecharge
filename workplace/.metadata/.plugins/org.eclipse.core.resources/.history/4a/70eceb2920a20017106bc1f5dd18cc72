@@ -1,0 +1,538 @@
+package ScheduleSystem;
+
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.concurrent.ThreadLocalRandom;
+
+import javax.swing.JTextArea;
+
+import ScheduleSystem.Dashboard.UiActionClass;
+import jade.core.Profile;
+import jade.core.ProfileImpl;
+import jade.core.Runtime;
+import jade.wrapper.AgentController;
+import jade.wrapper.ContainerController;
+import jade.wrapper.StaleProxyException;
+
+
+/*********************************************************
+ * 
+ * Creator: Brad Yoo 
+ * Date: 15/09/2017 
+ * Description: In charge of managing Agents
+ * 
+*********************************************************/
+public class AgentManager {
+
+	private static AgentManager Instance = null;
+
+	private AgentController SchedulingAgentCtrl = null;
+	private ContainerController MainCtrl = null;
+	
+	private int NumberOfBays;
+	private int BayCapacity;
+	private int OutletPerBay;
+	private int RunningGenerations;
+	private int SiblingsInAGeneration;
+	private int MutationRate;
+	
+	private JTextArea MessageTextArea;	
+
+	private UiActionClass UiActionClass;
+	
+	protected AgentManager()
+	{
+
+		
+	}
+	
+	public static AgentManager getInstance()
+	{
+		if(Instance == null)
+			Instance = new AgentManager();
+		return Instance;
+	}
+	
+	public AgentManager SetMasterAgent(int numberOfBays, int bayCapacity, int outletPerBay, int runningGenerations, int siblingsInAGeneration, int mutationRate)
+	{
+		NumberOfBays = numberOfBays;
+		BayCapacity = bayCapacity;
+		OutletPerBay = outletPerBay;
+		RunningGenerations = runningGenerations;
+		SiblingsInAGeneration = siblingsInAGeneration;
+		MutationRate = mutationRate;
+		return this;
+	}
+	
+	public AgentManager SetLogField(JTextArea messageTextArea)
+	{
+		MessageTextArea = messageTextArea;
+		return this;
+	}
+	
+	
+	public AgentManager SetUpdateUi(UiActionClass uiActionClass)
+	{
+		UiActionClass = uiActionClass;
+		return this;
+	}
+	
+	public AgentController StartMasterAgent()
+	{
+		
+		//Agent things
+		Runtime rt = Runtime.instance();
+		System.out.println("Launching the platform Main Container...");
+		
+		Profile pMain = new ProfileImpl(null, 8888, null);
+		pMain.setParameter(Profile.GUI, "true");
+		if(MainCtrl == null)
+			MainCtrl = rt.createMainContainer(pMain);
+		
+		// 1. Launch Scheduling agent
+		System.out.println("Starting up a SchedulingAgent...");
+		
+		try {
+			Object[] agentArgs = { NumberOfBays, BayCapacity, OutletPerBay };
+			SchedulingAgentCtrl = MainCtrl.createNewAgent("SchedulingAgent", SchedulingAgent.class.getName(), agentArgs);
+			SchedulingAgentCtrl.start();
+			
+		} catch (StaleProxyException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+		return SchedulingAgentCtrl;	
+	}
+	
+	private ArrayList<AgentController> carList = null;
+	
+	public ArrayList<AgentController> StartCarAgents()
+	{		
+		carList = new ArrayList<AgentController>();
+		
+		// 2. Launch Car agents
+		try
+		{
+			int[] requiredLoads = {100,100,100,100,100,100,
+					400,400,400,400,400,
+					500,500,500,500,500,
+					250,250,250,
+					50,50,
+					450,450,
+					25
+			};
+			
+			int[] deadlines = {50,50,150,150,200,200,
+					200,200,200,250,250,
+					200,200,300,300,300,
+					150,150,350,
+					50,100,
+					400,500,
+					250
+			};
+			
+			if(carList.size() != requiredLoads.length)
+			{			
+				for(int i = 0; i < requiredLoads.length; i++)
+				{
+					Object[] agentArgs = {i, requiredLoads[i], deadlines[i]}; 
+					AgentController carAgentCtrl = MainCtrl.createNewAgent("CarAgent"+i, CarAgent.class.getName(), agentArgs);
+					carAgentCtrl.start();
+					carList.add(carAgentCtrl);					
+				}
+			}				
+								
+		} catch (Exception ex)
+		{
+			ex.printStackTrace();
+		}
+		return carList;		
+	}
+	
+	private void ResetCars() 
+	{
+		for(AgentController ca: carList)
+		{
+			CarAgentInterface o2a;
+			try {
+				o2a = ca.getO2AInterface(CarAgentInterface.class);
+				o2a.reset();	
+			} catch (StaleProxyException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	public ArrayList<AgentController> GetCarList()
+	{
+		return carList;
+	}
+	
+	private void Log(String log)
+	{
+		MessageTextArea.append(log);
+	}
+	
+	private void Log(ArrayList<String> logs)
+	{
+		for(String log: logs)
+		{
+			MessageTextArea.append(log);
+		}		
+	}
+	
+	public void ResetBays()
+	{
+		for(Bay bay: GetBays())
+		{
+			bay.UsedLoad = 0;
+			for(Outlet outlet: bay.Outlets)
+			{
+				outlet.NextTurnNumber = 0;
+				outlet.UsedLoad = 0;
+			}
+		}	
+	}
+	
+	public void Run(int speed)
+	{
+		Genome bestGenome = null;
+		int bayCapacity = BayCapacity;	
+		
+		// generations
+		for(int k=0; k < RunningGenerations; k++)
+		{
+			Log("Gen[" + k + "] starts\n");
+			
+			ArrayList<Genome> genomes = new ArrayList<Genome>();
+			
+			// sibilings
+			for(int i=0; i < SiblingsInAGeneration; i++)
+			{				
+				Genome genome = new Genome();
+				
+				Genome modifiedBestGenome = bestGenome;
+				
+				// keep original genome in the first genome
+				if(i > 0 && modifiedBestGenome != null)
+				{
+					int numberOfSwap = ThreadLocalRandom.current().nextInt(1, 4);
+					for(int ii=0; ii < carList.size() / numberOfSwap; ii++)
+					{
+						// mutation
+						Integer mutationCarId = null;
+						if(ThreadLocalRandom.current().nextInt(0, 99) < MutationRate)
+						{
+							while(true)							
+							{
+								mutationCarId = GetCar(carList.get(ThreadLocalRandom.current().nextInt(0, carList.size()))).Id;
+								if(!modifiedBestGenome.CarIds.contains(mutationCarId))
+									break;
+							}
+						}
+						if(mutationCarId != null)
+							modifiedBestGenome.CarIds.set(ThreadLocalRandom.current().nextInt(0, modifiedBestGenome.CarIds.size()), mutationCarId);							
+						
+						int switchRange = ThreadLocalRandom.current().nextInt(0, 6);
+						int maxSize = modifiedBestGenome.CarIds.size();
+						int randomIndex = ThreadLocalRandom.current().nextInt(0, maxSize);
+						if(randomIndex == 0)
+						{
+							int c1 = modifiedBestGenome.CarIds.get(randomIndex);
+							modifiedBestGenome.CarIds.set(randomIndex, modifiedBestGenome.CarIds.get((randomIndex + switchRange) % maxSize));
+							modifiedBestGenome.CarIds.set((randomIndex + switchRange) % maxSize, c1);
+						}
+						else
+						{
+							int c1 = modifiedBestGenome.CarIds.get(randomIndex);
+							int index = randomIndex - switchRange;
+							if(index < 0)
+								index += maxSize;
+							modifiedBestGenome.CarIds.set(randomIndex, modifiedBestGenome.CarIds.get(index));
+							modifiedBestGenome.CarIds.set(index, c1);
+						}
+					}
+				}
+				
+				if(modifiedBestGenome != null)
+				{
+					Log("Switched genome[" + i + "] ");
+					for(int cid : modifiedBestGenome.CarIds)
+					{
+						Log(cid + ", ");
+					}
+					Log("\n");
+				}
+				Genome genomeToBeUsed = i == 0 ? bestGenome : modifiedBestGenome;
+				
+				int genomeCarIndex = 0;
+				/*** SETUP ***/
+				
+
+				ResetCars();		
+				ResetBays();
+				UiActionClass.actionPerformed(null);
+				
+				ArrayList<AgentController> carListToCharge = (ArrayList<AgentController>) carList.clone();
+				ArrayList<String> messages = new ArrayList<String>();
+				for(Bay bay : GetBays())
+				{
+					for(Outlet outlet : bay.Outlets)
+					{							
+						AgentController ca = GetCarAgent(genomeToBeUsed, carListToCharge, genomeCarIndex++);
+						outlet.CarIdUsedBy = GetCar(ca).Id;
+						
+						//genome
+						genome.AddCarId(GetCar(ca).Id);
+					}
+				}
+				
+				TotalElapsedSeconds = 0;
+				//updating
+				while(true)
+				{
+					messages = new ArrayList<String>();
+					
+					boolean allOutletAvailable = true;
+					boolean allBayRunOut = true;
+					for(Bay bay : GetBays())
+					{
+						if(bay.UsedLoad < bayCapacity)
+						{
+							allBayRunOut = false;
+							
+							for(Outlet outlet : bay.Outlets)
+							{
+								//release outlet when recharging a car is done
+								if(outlet.IsOccupied())
+								{
+									int carId = outlet.CarIdUsedBy;
+									Car car = GetCar(carId);
+									if(car.RequiredLoad <= 0)
+										outlet.Release();
+								}
+								
+								//find another car needing to recharge
+								if(!outlet.IsOccupied())
+								{
+									int carLeft = carListToCharge.size();
+									if (carLeft > 0)
+									{	
+										AgentController carAgent = GetCarAgent(genomeToBeUsed, carListToCharge, genomeCarIndex++);											
+										outlet.CarIdUsedBy = GetCar(carAgent).Id;
+										
+										//genome
+										genome.AddCarId(outlet.CarIdUsedBy);
+									}
+								}					
+								
+								//Recharge
+								if(outlet.IsOccupied())
+								{
+									
+									int carId = outlet.CarIdUsedBy;					
+									AgentController carAgent = GetCarAgent(carId);
+									Recharge(carAgent);
+									outlet.Used();
+									bay.Used();
+									allOutletAvailable = false;
+								}
+							}
+						}
+					}
+					
+					Log(messages);
+					UiActionClass.actionPerformed(null);
+					
+					//exit when all outlets not used or no car to recharge
+					if(allOutletAvailable || allBayRunOut)
+					{
+						//genome
+						genome.TotalTimeElapsed = totalElapsedSeconds;
+						Log("Charged percents of gen[" + i + "]: ");
+						int sum = 0;
+						for(AgentController carAgent : carList)
+						{
+							CarAgentInterface o2a;
+							try {
+								o2a = carAgent.getO2AInterface(CarAgentInterface.class);
+								Log(o2a.getChargedPercent() + ", ");
+								sum += o2a.getChargedPercent();
+							} catch (StaleProxyException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}								
+						}
+						int mean = sum / carList.size();
+						Log("\nMean: " + mean);
+						
+						sum = 0;
+						for(AgentController carAgent : carList)
+						{
+							CarAgentInterface o2a;
+							try {
+								o2a = carAgent.getO2AInterface(CarAgentInterface.class);
+								sum += Math.pow(o2a.getChargedPercent() - mean, 2);
+							} catch (StaleProxyException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}								
+						}				
+						double sqrt = Math.sqrt(sum / carList.size());
+						Log(", Standard Deviation(SD): " + sqrt + "\n");
+						genome.StandardDeviation = sqrt;
+						
+						genomes.add(genome);
+						break;
+					}			
+					
+					//Elapse time
+					for(AgentController carAgent : carList)
+					{
+						try {
+							CarAgentInterface o2a = carAgent.getO2AInterface(CarAgentInterface.class);
+							if(o2a.getRequiredLoad() > 0)
+								o2a.ElapseSecond();
+	
+						} catch (StaleProxyException e) {
+							// TODO Auto-generated catch block
+							e.printStackTrace();
+						}
+					}
+						
+					try {
+						Thread.sleep(speed);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					
+					totalElapsedSeconds++;					
+				}				
+				//end of siblings	
+			}
+			
+			Log("(TotalTimeElapsed, SD):" );
+			for(Genome gn : genomes)
+			{
+				Log("(" + gn.TotalTimeElapsed + "," + gn.StandardDeviation + "), ");
+			}
+			Log("\n");
+			
+			/*** DRAW ***/
+			
+			genomes.sort(new Comparator<Genome>() {
+				public int compare(Genome gs1, Genome gs2)
+				{
+					return gs1.GetScore() > gs2.GetScore() ? 1 : gs1.GetScore() < gs2.GetScore() ? -1 : 0;
+				}
+			});
+			Log("Gen["+k+"] least score: "+ genomes.get(0).GetScore() +", elased: " + genomes.get(0).TotalTimeElapsed + ", SD: "+ genomes.get(0).StandardDeviation +" \n");
+
+			bestGenome = genomes.get(0);
+			
+			genomes.clear();
+			
+			// end of generation
+			Log("\n");
+		}
+	}
+	
+	Car GetCar(AgentController carAgent)
+	{
+		CarAgentInterface o2a;
+		try {
+			o2a = carAgent.getO2AInterface(CarAgentInterface.class);
+			return new Car(o2a.getId(), o2a.getRequiredLoad());
+		} catch (StaleProxyException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	private void Recharge(AgentController carAgent)
+	{
+		CarAgentInterface o2a;
+		try {
+			o2a = carAgent.getO2AInterface(CarAgentInterface.class);
+			o2a.recharge();
+		} catch (StaleProxyException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+	private Car GetCar(int id)
+	{
+		for(AgentController carAgent: carList) 
+		{
+			Car c = GetCar(carAgent);
+			if(c.Id == id)
+				return c;			
+		}
+		return null;
+	}
+	
+	private AgentController GetCarAgent(int id)
+	{
+		for(AgentController carAgent: carList) 
+		{
+			Car c = GetCar(carAgent);
+			if(c.Id == id)
+				return carAgent;			
+		}
+		return null;
+	}	
+	
+	private AgentController GetCarAgent(Genome g, ArrayList<AgentController> carListToCharge, int genomeCarIndex)
+	{
+		int randomCarIndex = ThreadLocalRandom.current().nextInt(0, carListToCharge.size());		
+		int carIndex = g == null ? randomCarIndex : FindIndexByCarId(g.CarIds.size() > genomeCarIndex ? g.CarIds.get(genomeCarIndex) : GetRandomCarIdExceptFor(g.CarIds), carListToCharge);
+		AgentController carAgent = carListToCharge.get(carIndex != -1 ? carIndex : randomCarIndex);
+		carListToCharge.remove(carIndex != -1 ? carIndex : randomCarIndex);
+		return carAgent;
+	}
+	
+	private int FindIndexByCarId(int id, ArrayList<AgentController> agents)
+	{
+		//System.out.println("agents == null: " + agents == null);
+		if(agents == null)
+			agents = carList;
+		
+		for(AgentController ac : carList)
+		{
+			Car car = GetCar(ac);
+			if (car.Id == id)
+			{
+				return agents.indexOf(ac);
+			}
+		}
+		
+		return -1;
+	}
+	
+	private Integer GetRandomCarIdExceptFor(ArrayList<Integer> excludeIds)
+	{
+		while(true)
+		{
+			int randomCarId = GetCar(carList.get(ThreadLocalRandom.current().nextInt(0, carList.size()))).Id;
+			if(!excludeIds.contains(randomCarId))
+				return randomCarId;
+		}
+	}
+	
+	public ArrayList<Bay> GetBays()
+	{
+		ISchedulingAgent schedulingAgent;
+		try {
+			schedulingAgent = SchedulingAgentCtrl.getO2AInterface(ISchedulingAgent.class);
+			return schedulingAgent.GetBays();
+		} catch (StaleProxyException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
+	}
+}
