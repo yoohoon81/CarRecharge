@@ -5,47 +5,52 @@ import jade.core.Agent;
 public class CarAgent extends Agent implements CarAgentInterface {
 	
 	public int Id;
-	private int RequiredLoad;	
-	private int LoadToRecharge;	
+	private int InitialRequiredLoad;	
+	private int CurrentRequiredLoad;	
+	private int StartTime;		
 	private int Deadline;	
 	private int ElapsedSeconds;
+	public boolean BeingRecharged;
 	public CarAgent() {
 		registerO2AInterface(CarAgentInterface.class, this);	
 		ElapsedSeconds = 0;
 	}
 	
+	// (BY) Generate car and set values of car property
 	protected void setup() {
 		
 		Object[] args = getArguments();
 		System.out.println("Starting up a CarAgent" + args[0]);
 		Id = Integer.parseInt(args[0].toString());
-		RequiredLoad = Integer.parseInt(args[2].toString());
-		LoadToRecharge = Integer.parseInt(args[2].toString());
-		Deadline = Integer.parseInt(args[1].toString());
+		InitialRequiredLoad = Integer.parseInt(args[1].toString());
+		CurrentRequiredLoad = Integer.parseInt(args[1].toString());
+		StartTime = Integer.parseInt(args[2].toString());
+		Deadline = Integer.parseInt(args[3].toString());
 	}
 
 	@Override
-	public int getDeadline() {
+	public int GetDeadline() {
 		return Deadline;
 	}
 
 	@Override
-	public int getLoadToRecharge() {
-		return LoadToRecharge;
-	}
-	@Override
-	public int getRequiredLoad() {
-		return RequiredLoad;
+	public int GetCurrentRequiredLoad() {
+		return CurrentRequiredLoad;
 	}
 
 	@Override
-	public int getId() {
+	public int GetInitialRequiredLoad() {
+		return InitialRequiredLoad;
+	}
+
+	@Override
+	public int GetId() {
 		return Id;
 	}
 
 	@Override
-	public void recharge() {
-		LoadToRecharge -= 1;
+	public void Recharge() {
+		CurrentRequiredLoad -= 1;
 		
 	}
 
@@ -55,17 +60,37 @@ public class CarAgent extends Agent implements CarAgentInterface {
 	}
 
 	@Override
-	public int getChargedPercent() {
-		if(RequiredLoad <= 0)
+	public int GetChargedPercent() {
+		if(InitialRequiredLoad <= 0)
 			return 100;
 		
-		return (RequiredLoad - LoadToRecharge) * 100 / RequiredLoad;
+		return (InitialRequiredLoad - CurrentRequiredLoad) * 100 / InitialRequiredLoad;
 	}	
 
 	@Override
-	public void reset()
+	public void Reset()
 	{
-		LoadToRecharge = RequiredLoad;
+		CurrentRequiredLoad = InitialRequiredLoad;
 		ElapsedSeconds = 0;
+		EndRecharging();
 	}
+
+	@Override
+	public int GetStartTime() {
+		return StartTime;
+	}
+	@Override
+	public boolean IsBeingRecharged() {
+		return BeingRecharged;
+	}
+	@Override
+	public void StartRecharging() {
+		 BeingRecharged = true;
+	}
+	@Override
+	public void EndRecharging() {
+		 BeingRecharged = false;
+	}
+	
+	
 }

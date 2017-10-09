@@ -7,6 +7,10 @@ public class Genome {
 
 	public int TotalTimeElapsed;
 	public double StandardDeviation;
+
+	public float RequiredLoadWeight;
+	public float TimeToDeadlineWeight;
+	
 	public Genome()
 	{
 		CarIds = new ArrayList<Integer>();

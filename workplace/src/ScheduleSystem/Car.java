@@ -2,13 +2,15 @@ package ScheduleSystem;
 
 public class Car
 {
-	Car(int id, int requiredLoad, int deadline)
+	Car(int id, int initialRequiredLoad, int currentRequiredLoad, int deadline)
 	{
 		Id = id;
-		RequiredLoad = requiredLoad;
+		InitialRequiredLoad = initialRequiredLoad;
+		CurrentRequiredLoad = currentRequiredLoad;
 		Deadline = deadline;
 	}
 	public int Id;
-	public int RequiredLoad;
+	public int InitialRequiredLoad;
+	public int CurrentRequiredLoad;
 	public int Deadline;	
 }

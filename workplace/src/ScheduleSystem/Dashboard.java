@@ -117,7 +117,6 @@ public class Dashboard extends JFrame {
 		carNumberTextField = new JTextField();
 		panel.add(carNumberTextField);
 		carNumberTextField.setText("24");
-		carNumberTextField.setEditable(false);
 		carNumberTextField.setColumns(10);
 		settingsPanel.add(panel);
 		settingsPanel.add(panel_1);
@@ -224,11 +223,11 @@ public class Dashboard extends JFrame {
 			new Object[][] {
 			},
 			new String[] {
-				"Id", "Deadline", "Required KW", "Load to recharge", "Charged %"
+				"Id", "Start time", "Deadline", "Required KW", "Load to recharge", "Charged %"
 			}
 		) {
 			Class[] columnTypes = new Class[] {
-				Integer.class, Integer.class, Integer.class, Integer.class, Integer.class
+				Integer.class, Integer.class, Integer.class, Integer.class, Integer.class, Integer.class
 			};
 			public Class getColumnClass(int columnIndex) {
 				return columnTypes[columnIndex];
@@ -300,7 +299,7 @@ public class Dashboard extends JFrame {
 	
 	public void Generate()
 	{
-		agentManager.StartCarAgents();		
+		agentManager.StartCarAgents(Integer.parseInt(carNumberTextField.getText()));		
 		agentManager.ResetBays();
 		
 		UpdateUi(null);		
@@ -340,14 +339,15 @@ public class Dashboard extends JFrame {
 			{
 				CarAgentInterface o2a = car.getO2AInterface(CarAgentInterface.class);
 				if(model.getRowCount() < carList.size())
-					model.addRow(new Object[] { o2a.getId(), o2a.getDeadline(), o2a.getRequiredLoad(), o2a.getLoadToRecharge(), o2a.getChargedPercent() });
+					model.addRow(new Object[] { o2a.GetId(), o2a.GetStartTime(), o2a.GetDeadline(), o2a.GetInitialRequiredLoad(), o2a.GetCurrentRequiredLoad(), o2a.GetChargedPercent() });
 				else
 				{
-					model.setValueAt(o2a.getId(), i, 0);
-					model.setValueAt(o2a.getDeadline(), i, 1);
-					model.setValueAt(o2a.getRequiredLoad(), i, 2);
-					model.setValueAt(o2a.getLoadToRecharge(), i, 3);
-					model.setValueAt(o2a.getChargedPercent(), i, 4);
+					model.setValueAt(o2a.GetId(), i, 0);
+					model.setValueAt(o2a.GetStartTime(), i, 1);
+					model.setValueAt(o2a.GetDeadline(), i, 2);
+					model.setValueAt(o2a.GetInitialRequiredLoad(), i, 3);
+					model.setValueAt(o2a.GetCurrentRequiredLoad(), i, 4);
+					model.setValueAt(o2a.GetChargedPercent(), i, 5);
 				}
 			} 
 			catch (Exception ex)
