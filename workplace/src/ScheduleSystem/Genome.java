@@ -6,10 +6,14 @@ public class Genome {
 	public ArrayList<Integer> CarIds;
 
 	public int TotalTimeElapsed;
-	public double StandardDeviation;
+	public int TotalRechargedLoad;
+	public int TotalWaitedSeconds;
+	public double StandardDeviationRechargedPercent;
+	public double StandardDeviationWaitedSeconds;
 
-	public float RequiredLoadWeight;
-	public float TimeToDeadlineWeight;
+	public int RequiredLoadWeight;
+	public int TimeToDeadlineWeight;
+	public int WaitedSecondsWeight;
 	
 	public Genome()
 	{
@@ -21,10 +25,21 @@ public class Genome {
 		CarIds.add(id);
 	}
 	
-	public double GetScore()
+	//(BY) The higher, the better
+	public double GetScore(Genome min, Genome max)
 	{
-		return StandardDeviation * 10 + TotalTimeElapsed;
-		//return Sigmoid(StandardDeviation) + Sigmoid(TotalTimeElapsed);
+		return - Sigmoid(GetSigmoidParam(TotalTimeElapsed, min.TotalTimeElapsed, max.TotalTimeElapsed))
+				+ Sigmoid(GetSigmoidParam(TotalRechargedLoad, min.TotalRechargedLoad, max.TotalRechargedLoad))
+				- Sigmoid(GetSigmoidParam(TotalWaitedSeconds, min.TotalWaitedSeconds, max.TotalWaitedSeconds))
+				- Sigmoid(GetSigmoidParam(StandardDeviationRechargedPercent, min.StandardDeviationRechargedPercent, max.StandardDeviationRechargedPercent))
+				- Sigmoid(GetSigmoidParam(StandardDeviationWaitedSeconds, min.StandardDeviationWaitedSeconds, max.StandardDeviationWaitedSeconds));
+	}
+	
+	private static double GetSigmoidParam(double v, double min, double max)
+	{
+		if (max == min)
+			return 0;
+		return (v - (max + min) / 2) / (max - min);
 	}
 	
 	private static double Sigmoid(double x)

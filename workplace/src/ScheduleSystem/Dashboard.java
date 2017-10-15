@@ -12,11 +12,14 @@ import javax.swing.JTable;
 import javax.swing.JScrollPane;
 import javax.swing.JButton;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
 import java.util.ArrayList;
 import java.awt.event.ActionEvent;
 import org.eclipse.wb.swing.FocusTraversalOnArray;
 import jade.wrapper.AgentController;
 import jade.wrapper.StaleProxyException;
+import sun.rmi.runtime.Log;
 
 import java.awt.Component;
 import java.awt.GridLayout;
@@ -24,8 +27,15 @@ import javax.swing.JLabel;
 import java.awt.FlowLayout;
 import java.awt.Dimension;
 import javax.swing.SwingConstants;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.JTextArea;
 import javax.swing.ScrollPaneConstants;
+import javax.swing.JSlider;
+import javax.swing.BoxLayout;
+import java.awt.CardLayout;
+import java.awt.GridBagLayout;
+import java.awt.GridBagConstraints;
 
 /*********************************************************
  * 
@@ -52,7 +62,18 @@ public class Dashboard extends JFrame {
 	private JTextField siblingsInAGenerationTextField;
 	private JTextField mutationRateTextField;
 	private JLabel elapsedLabel;
-	
+	private JSlider speedSlider;
+	private JTextField StandardDeviationRechargedPercentRange;
+	private JTextField TotalWaitedSecondsRange;
+	private JTextField TotalRechargedLoadRange;
+	private JTextField TotalTimeElapsedRange;
+	private JTextField StandardDeviationWaitedSecondsRange;
+	private JTextField TotalRechargedLoad;
+	private JTextField TotalTimeElapsed;
+	private JTextField TotalWaitedSeconds;
+	private JTextField StandardDeviationRechargedPercent;
+	private JTextField StandardDeviationWaitedSeconds;
+	private JButton resetButton;
 	/**
 	 * Create the frame.
 	 */
@@ -99,7 +120,7 @@ public class Dashboard extends JFrame {
 		
 		bayCapacityTextField = new JTextField();
 		bayCapacityTextField.setBounds(116, 59, 65, 21);
-		bayCapacityTextField.setText("1000");
+		bayCapacityTextField.setText("10000");
 		bayCapacityTextField.setColumns(10);
 		
 		numberOfBaysTextField = new JTextField();
@@ -191,6 +212,12 @@ public class Dashboard extends JFrame {
 		runButton.setEnabled(false);
 		panelNorth.add(runButton);
 		
+		speedSlider = new JSlider();
+		speedSlider.setValue(20);
+		speedSlider.setMaximum(40);
+		speedSlider.setMinimum(0);
+		panelNorth.add(speedSlider);
+		
 		JLabel lblElapsed = new JLabel("Elapsed:");
 		panelNorth.add(lblElapsed);
 		
@@ -223,16 +250,57 @@ public class Dashboard extends JFrame {
 			new Object[][] {
 			},
 			new String[] {
-				"Id", "Start time", "Deadline", "Required KW", "Load to recharge", "Charged %"
+				"Id", "Start time", "Deadline", "Required KW", "Load to recharge", "Charged %", "Status"
 			}
 		) {
 			Class[] columnTypes = new Class[] {
-				Integer.class, Integer.class, Integer.class, Integer.class, Integer.class, Integer.class
+				Integer.class, Integer.class, Integer.class, Integer.class, Integer.class, Integer.class, CarStatus.class
 			};
 			public Class getColumnClass(int columnIndex) {
 				return columnTypes[columnIndex];
+			};
+			
+			boolean[] canEdit = new boolean[] {false, true, true, true, false, false, false, false, false, false};
+			public boolean isCellEditable(int rowIndex, int columnIndex) 
+			{				
+				return canEdit[columnIndex];
 			}
 		});
+		
+		carTable.addFocusListener(new FocusListener() {
+			
+			@Override
+			public void focusLost(FocusEvent e) {
+				// TODO Auto-generated method stub
+				//System.out.println("lost");
+			}
+			
+			@Override
+			public void focusGained(FocusEvent e) {
+
+				DefaultTableModel model = (DefaultTableModel) carTable.getModel();
+
+				ArrayList<AgentController> carList = agentManager.GetCarList();
+				for(int i = 0; i < model.getRowCount(); i++)
+				{
+					CarAgentInterface ca = agentManager.GetCarInterface(carList.get(i));
+					
+					ca.Set(Integer.parseInt(model.getValueAt(i, 1).toString()), 
+							Integer.parseInt(model.getValueAt(i, 2).toString()),
+							Integer.parseInt(model.getValueAt(i, 3).toString())
+						);
+				}
+			}
+		});
+		//.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+
+//			@Override
+//			public void valueChanged(ListSelectionEvent e) {
+//				System.out.println("fff");
+//				
+//			}
+//			
+//		});
 		
 		JPanel panel_3 = new JPanel();
 		panelCentre.add(panel_3, BorderLayout.CENTER);
@@ -261,17 +329,106 @@ public class Dashboard extends JFrame {
 		
 		JPanel panelEast = new JPanel();
 		statusPanel.add(panelEast, BorderLayout.EAST);
+		panelEast.setLayout(new BorderLayout(1, 1));
+		
+		JPanel panel_6 = new JPanel();
+		panelEast.add(panel_6, BorderLayout.NORTH);
+		panel_6.setLayout(new GridLayout(6, 3, 3, 3));
+		
+		JLabel lblNewLabel_9 = new JLabel("");
+		panel_6.add(lblNewLabel_9);
+		
+		JLabel label = new JLabel("");
+		panel_6.add(label);
+		
+		resetButton = new JButton("Find values");
+		resetButton.setEnabled(false);
+		resetButton.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				agentManager.SetWeights();
+				UpdateUi(null);	
+				runButton.setEnabled(true);
+			}
+		});
+		panel_6.add(resetButton);
+		
+		JLabel lblTotaltimeelapsed = new JLabel("TotalTimeElapsed");
+		lblTotaltimeelapsed.setHorizontalAlignment(SwingConstants.RIGHT);
+		panel_6.add(lblTotaltimeelapsed);
+		
+		TotalTimeElapsedRange = new JTextField();
+		TotalTimeElapsedRange.setEditable(false);
+		panel_6.add(TotalTimeElapsedRange);
+		TotalTimeElapsedRange.setColumns(10);
+		
+		TotalTimeElapsed = new JTextField();
+		TotalTimeElapsed.setColumns(10);
+		panel_6.add(TotalTimeElapsed);
+		
+		JLabel TotalRechargedLoadLabel = new JLabel("TotalRechargedLoad");
+		TotalRechargedLoadLabel.setHorizontalAlignment(SwingConstants.RIGHT);
+		panel_6.add(TotalRechargedLoadLabel);
+		
+		TotalRechargedLoadRange = new JTextField();
+		TotalRechargedLoadRange.setEditable(false);
+		TotalRechargedLoadLabel.setLabelFor(TotalRechargedLoadRange);
+		panel_6.add(TotalRechargedLoadRange);
+		TotalRechargedLoadRange.setColumns(10);
+		
+		TotalRechargedLoad = new JTextField();
+		TotalRechargedLoad.setColumns(10);
+		panel_6.add(TotalRechargedLoad);
+		
+		
+		JLabel lblNewLabel_10 = new JLabel("TotalWaitedSeconds");
+		lblNewLabel_10.setHorizontalAlignment(SwingConstants.RIGHT);
+		panel_6.add(lblNewLabel_10);
+		
+		TotalWaitedSecondsRange = new JTextField();
+		TotalWaitedSecondsRange.setEditable(false);
+		panel_6.add(TotalWaitedSecondsRange);
+		TotalWaitedSecondsRange.setColumns(10);
+		
+		TotalWaitedSeconds = new JTextField();
+		TotalWaitedSeconds.setColumns(10);
+		panel_6.add(TotalWaitedSeconds);
+		
+		JLabel lblNewLabel_8 = new JLabel("RechargedPercent SD");
+		lblNewLabel_8.setHorizontalAlignment(SwingConstants.RIGHT);
+		panel_6.add(lblNewLabel_8);
+		
+		StandardDeviationRechargedPercentRange = new JTextField();
+		StandardDeviationRechargedPercentRange.setEditable(false);
+		panel_6.add(StandardDeviationRechargedPercentRange);
+		StandardDeviationRechargedPercentRange.setColumns(1);
+		
+		StandardDeviationRechargedPercent = new JTextField();
+		StandardDeviationRechargedPercent.setColumns(1);
+		panel_6.add(StandardDeviationRechargedPercent);
+		
+		JLabel lblWaitedsecondsSd = new JLabel("WaitedSeconds SD");
+		lblWaitedsecondsSd.setHorizontalAlignment(SwingConstants.RIGHT);
+		panel_6.add(lblWaitedsecondsSd);
+		
+		StandardDeviationWaitedSecondsRange = new JTextField();
+		StandardDeviationWaitedSecondsRange.setEditable(false);
+		StandardDeviationWaitedSecondsRange.setColumns(1);
+		panel_6.add(StandardDeviationWaitedSecondsRange);
+		
+		StandardDeviationWaitedSeconds = new JTextField();
+		StandardDeviationWaitedSeconds.setColumns(1);
+		panel_6.add(StandardDeviationWaitedSeconds);
 		
 		JPanel panel_4 = new JPanel();
 		panelEast.add(panel_4);
-		panel_4.setPreferredSize(new Dimension(650, 680));
+		panel_4.setPreferredSize(new Dimension(650, 480));
 		panel_4.setLayout(new FlowLayout(FlowLayout.CENTER, 5, 5));
 		
 		
-		messageTextArea = new JTextArea(35, 75);
+		messageTextArea = new JTextArea(30, 75);
 		messageTextArea.setEditable(false);
 		JScrollPane scrollPane_2 = new JScrollPane(messageTextArea);
-		scrollPane_2.setPreferredSize(new Dimension(650, 636));
+		scrollPane_2.setPreferredSize(new Dimension(650, 500));
 		scrollPane_2.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_ALWAYS);
 		scrollPane_2.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_ALWAYS);
 		panel_4.add(scrollPane_2);
@@ -301,16 +458,17 @@ public class Dashboard extends JFrame {
 	{
 		agentManager.StartCarAgents(Integer.parseInt(carNumberTextField.getText()));		
 		agentManager.ResetBays();
-		
+		//agentManager.SetWeights();
 		UpdateUi(null);		
+		
+		resetButton.setEnabled(true);
 		
 	}
 		
 	private class Run implements Runnable
 	{
 		public void run() {
-			int speed = Integer.parseInt(speedTextField.getText());
-			agentManager.Run(speed);
+			agentManager.Run(speedSlider);
 		}
 	}
 	
@@ -339,7 +497,15 @@ public class Dashboard extends JFrame {
 			{
 				CarAgentInterface o2a = car.getO2AInterface(CarAgentInterface.class);
 				if(model.getRowCount() < carList.size())
-					model.addRow(new Object[] { o2a.GetId(), o2a.GetStartTime(), o2a.GetDeadline(), o2a.GetInitialRequiredLoad(), o2a.GetCurrentRequiredLoad(), o2a.GetChargedPercent() });
+					model.addRow(new Object[] { 
+							o2a.GetId(), 
+							o2a.GetStartTime(), 
+							o2a.GetDeadline(), 
+							o2a.GetInitialRequiredLoad(), 
+							o2a.GetCurrentRequiredLoad(), 
+							o2a.GetChargedPercent(),
+							o2a.GetStatus()
+					});
 				else
 				{
 					model.setValueAt(o2a.GetId(), i, 0);
@@ -348,6 +514,7 @@ public class Dashboard extends JFrame {
 					model.setValueAt(o2a.GetInitialRequiredLoad(), i, 3);
 					model.setValueAt(o2a.GetCurrentRequiredLoad(), i, 4);
 					model.setValueAt(o2a.GetChargedPercent(), i, 5);
+					model.setValueAt(o2a.GetStatus(), i, 6);
 				}
 			} 
 			catch (Exception ex)
@@ -386,6 +553,24 @@ public class Dashboard extends JFrame {
 		
 		elapsedLabel.setText(Integer.toString(agentManager.GetTotalElapsedSeconds()));
 		
-		runButton.setEnabled(carList.size() > 0 && bays.size() > 0);
+		//runButton.setEnabled(carList.size() > 0 && bays.size() > 0);
+		
+		//show ranges from random run & recommend average values
+		Genome min = agentManager.GetMinGenome();
+		Genome max = agentManager.GetMaxGenome();
+
+		if(min != null && max != null)
+		{
+			TotalRechargedLoadRange.setText(min.TotalRechargedLoad + "~" + max.TotalRechargedLoad);
+			TotalRechargedLoad.setText(Integer.toString((min.TotalRechargedLoad + max.TotalRechargedLoad) / 2));
+			TotalTimeElapsedRange.setText(min.TotalTimeElapsed + "~" + max.TotalTimeElapsed);
+			TotalTimeElapsed.setText(Integer.toString((min.TotalTimeElapsed + max.TotalTimeElapsed) / 2));
+			TotalWaitedSecondsRange.setText(min.TotalWaitedSeconds + "~" + max.TotalWaitedSeconds);
+			TotalWaitedSeconds.setText(Integer.toString((min.TotalWaitedSeconds + max.TotalWaitedSeconds) / 2));
+			StandardDeviationRechargedPercentRange.setText(min.StandardDeviationRechargedPercent + "~" + max.StandardDeviationRechargedPercent);
+			StandardDeviationRechargedPercent.setText(Double.toString((min.StandardDeviationRechargedPercent + max.StandardDeviationRechargedPercent) / 2));
+			StandardDeviationWaitedSecondsRange.setText(min.StandardDeviationWaitedSeconds + "~" + max.StandardDeviationWaitedSeconds);
+			StandardDeviationWaitedSeconds.setText(Double.toString((min.StandardDeviationWaitedSeconds + max.StandardDeviationWaitedSeconds) / 2));
+		}
 	}
 }

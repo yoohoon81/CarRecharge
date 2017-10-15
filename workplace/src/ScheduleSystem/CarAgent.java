@@ -10,7 +10,10 @@ public class CarAgent extends Agent implements CarAgentInterface {
 	private int StartTime;		
 	private int Deadline;	
 	private int ElapsedSeconds;
+	private int WaitedSeconds;
 	public boolean BeingRecharged;
+	public CarStatus CarStatus;
+	
 	public CarAgent() {
 		registerO2AInterface(CarAgentInterface.class, this);	
 		ElapsedSeconds = 0;
@@ -26,6 +29,7 @@ public class CarAgent extends Agent implements CarAgentInterface {
 		CurrentRequiredLoad = Integer.parseInt(args[1].toString());
 		StartTime = Integer.parseInt(args[2].toString());
 		Deadline = Integer.parseInt(args[3].toString());
+		CarStatus = ScheduleSystem.CarStatus.Pending;
 	}
 
 	@Override
@@ -55,8 +59,13 @@ public class CarAgent extends Agent implements CarAgentInterface {
 	}
 
 	@Override
-	public int ElapseSecond() {
-		return ElapsedSeconds++;
+	public int IncreaseWaitedSeconds() {
+		return WaitedSeconds++;
+	}
+	
+	@Override
+	public int GetWaitedSeconds() {
+		return WaitedSeconds++;
 	}
 
 	@Override
@@ -72,7 +81,9 @@ public class CarAgent extends Agent implements CarAgentInterface {
 	{
 		CurrentRequiredLoad = InitialRequiredLoad;
 		ElapsedSeconds = 0;
-		EndRecharging();
+		BeingRecharged = false;
+		CarStatus = ScheduleSystem.CarStatus.Pending;
+		WaitedSeconds = 0;
 	}
 
 	@Override
@@ -86,10 +97,29 @@ public class CarAgent extends Agent implements CarAgentInterface {
 	@Override
 	public void StartRecharging() {
 		 BeingRecharged = true;
+		 CarStatus = ScheduleSystem.CarStatus.Recharging;
 	}
 	@Override
 	public void EndRecharging() {
 		 BeingRecharged = false;
+		 CarStatus = GetChargedPercent() < 100 ? ScheduleSystem.CarStatus.IncompleteCharged : ScheduleSystem.CarStatus.FullyCharged;			 
+	}
+
+	@Override
+	public CarStatus GetStatus() {
+		return CarStatus;
+	}
+
+	@Override
+	public void SetStatus(ScheduleSystem.CarStatus status) {
+		CarStatus = status;		
+	}
+
+	@Override
+	public void Set(int startTime, int deadline, int requiredLoad) {
+		StartTime = startTime;
+		Deadline = deadline;
+		InitialRequiredLoad = requiredLoad;
 	}
 	
 	
