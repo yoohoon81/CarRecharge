@@ -26,13 +26,29 @@ public class Genome {
 	}
 	
 	//(BY) The higher, the better
-	public double GetScore(Genome min, Genome max)
+//	public double GetScore(Genome worst, Genome best)
+//	{
+//		double score = - Sigmoid(GetSigmoidParam(TotalTimeElapsed, best.TotalTimeElapsed, worst.TotalTimeElapsed))
+//				+ Sigmoid(GetSigmoidParam(TotalRechargedLoad, worst.TotalRechargedLoad, best.TotalRechargedLoad))
+//				- Sigmoid(GetSigmoidParam(TotalWaitedSeconds, best.TotalWaitedSeconds, worst.TotalWaitedSeconds))
+//				- Sigmoid(GetSigmoidParam(StandardDeviationRechargedPercent, best.StandardDeviationRechargedPercent, worst.StandardDeviationRechargedPercent))
+//				- Sigmoid(GetSigmoidParam(StandardDeviationWaitedSeconds, best.StandardDeviationWaitedSeconds, worst.StandardDeviationWaitedSeconds));
+//		return score;
+//	}
+	
+	public double GetScore(double[] weights)
 	{
-		return - Sigmoid(GetSigmoidParam(TotalTimeElapsed, min.TotalTimeElapsed, max.TotalTimeElapsed))
-				+ Sigmoid(GetSigmoidParam(TotalRechargedLoad, min.TotalRechargedLoad, max.TotalRechargedLoad))
-				- Sigmoid(GetSigmoidParam(TotalWaitedSeconds, min.TotalWaitedSeconds, max.TotalWaitedSeconds))
-				- Sigmoid(GetSigmoidParam(StandardDeviationRechargedPercent, min.StandardDeviationRechargedPercent, max.StandardDeviationRechargedPercent))
-				- Sigmoid(GetSigmoidParam(StandardDeviationWaitedSeconds, min.StandardDeviationWaitedSeconds, max.StandardDeviationWaitedSeconds));
+		return GetScore(weights[0], weights[1], weights[2], weights[3], weights[4]);
+	}
+	
+	public double GetScore(double TotalTimeElapsedWeight, double TotalRechargedLoadWeight, double TotalWaitedSecondsWeight, double StandardDeviationRechargedPercentWeight, double StandardDeviationWaitedSecondsWeight)
+	{
+		double score = - TotalTimeElapsed * TotalTimeElapsedWeight
+				+ TotalRechargedLoad * TotalRechargedLoadWeight
+				- TotalWaitedSeconds * TotalWaitedSecondsWeight
+				- StandardDeviationRechargedPercent * StandardDeviationRechargedPercentWeight
+				- StandardDeviationWaitedSeconds * StandardDeviationWaitedSecondsWeight;
+		return score;
 	}
 	
 	private static double GetSigmoidParam(double v, double min, double max)
@@ -44,6 +60,7 @@ public class Genome {
 	
 	private static double Sigmoid(double x)
 	{
-	    return 1 / (1 + Math.exp(-x));
+	    double v = 1 / (1 + Math.exp(-x));
+	    return v;
 	}
 }

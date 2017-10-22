@@ -49,8 +49,11 @@ public class AgentManager {
 	private int TotalElapsedSeconds;
 	private int CarNumber;
 
-	private Genome MinGenome;
-	private Genome MaxGenome;
+	private Genome WorstGenome;
+	private Genome BestGenome;
+
+	private ArrayList<Double> GenScores;
+	private int count;
 	
 	protected AgentManager()
 	{
@@ -119,39 +122,18 @@ public class AgentManager {
 	
 	public ArrayList<AgentController> StartCarAgents(int carNumber)
 	{		
+		count = 0;
 		CarNumber = carNumber;
 		carList = new ArrayList<AgentController>();
 		
 		// 2. Launch Car agents
 		try
-		{
-//			int[] requiredLoads = {100,100,100,100,100,100,
-//					400,400,400,400,400,
-//					500,500,500,500,500,
-//					250,250,250,
-//					50,50,
-//					450,450,
-//					25
-//			};
-//			
-//			int[] deadlines = {50,50,150,150,200,200,
-//					100,100,200,250,250,
-//					100,100,200,300,300,
-//					150,150,350,
-//					50,100,
-//					200,500,
-//					250
-//			};
-			
+		{			
 			if(carList.size() != carNumber)
 			{			
 				for(int i = 0; i < carNumber; i++)
-				{
-					int requiredLoad = GetRandomInt(25, 500);
-					int startTime = GetRandomInt(0, 500);
-					int deadline = startTime + 
-							GetRandomInt(100, 500);
-					Object[] agentArgs = {i, requiredLoad, startTime, deadline}; 
+				{					
+					Object[] agentArgs = { i }; 
 					
 					AgentController carAgentCtrl = null;
 					try
@@ -223,53 +205,56 @@ public class AgentManager {
 		}	
 	}
 	
-	public Genome GetMinGenome()
+	public Genome GetWorstGenome()
 	{
-		return MinGenome;
+		return WorstGenome;
 	}
 	
-	public Genome GetMaxGenome()
+	public Genome GetBestGenome()
 	{
-		return MaxGenome;
+		return BestGenome;
 	}
 	
 	public void SetWeights()
 	{
-		ArrayList<Genome> genomes = GetGenomes(null, null, 100);
+		int randomRun = 15;
+		ArrayList<Genome> genomes = GetGenomes(null, null, randomRun);
 		
-		MinGenome = new Genome();
-		MaxGenome = new Genome();
 		boolean isFirst = true;
+		WorstGenome = new Genome();
+		BestGenome = new Genome();
 		
 		for(Genome g: genomes)
-		{
-			if(isFirst || g.TotalRechargedLoad < MinGenome.TotalRechargedLoad)
-				MinGenome.TotalRechargedLoad = g.TotalRechargedLoad;
-			if(isFirst || g.TotalRechargedLoad > MaxGenome.TotalRechargedLoad)
-				MaxGenome.TotalRechargedLoad = g.TotalRechargedLoad;
+		{						
+			if(isFirst || g.TotalTimeElapsed > WorstGenome.TotalTimeElapsed)
+				WorstGenome.TotalTimeElapsed = g.TotalTimeElapsed;
+			if(isFirst || g.TotalTimeElapsed < BestGenome.TotalTimeElapsed)
+				BestGenome.TotalTimeElapsed = g.TotalTimeElapsed;
 			
-			if(isFirst || g.TotalTimeElapsed < MinGenome.TotalTimeElapsed)
-				MinGenome.TotalTimeElapsed = g.TotalTimeElapsed;
-			if(isFirst || g.TotalTimeElapsed > MaxGenome.TotalTimeElapsed)
-				MaxGenome.TotalTimeElapsed = g.TotalTimeElapsed;
+			if(isFirst || g.TotalRechargedLoad < WorstGenome.TotalRechargedLoad)
+				WorstGenome.TotalRechargedLoad = g.TotalRechargedLoad;
+			if(isFirst || g.TotalRechargedLoad > BestGenome.TotalRechargedLoad)
+				BestGenome.TotalRechargedLoad = g.TotalRechargedLoad;
 			
-			if(isFirst || g.TotalWaitedSeconds < MinGenome.TotalWaitedSeconds)
-				MinGenome.TotalWaitedSeconds = g.TotalWaitedSeconds;
-			if(isFirst || g.TotalWaitedSeconds > MaxGenome.TotalWaitedSeconds)
-				MaxGenome.TotalWaitedSeconds = g.TotalWaitedSeconds;
+			if(isFirst || g.TotalWaitedSeconds > WorstGenome.TotalWaitedSeconds)
+				WorstGenome.TotalWaitedSeconds = g.TotalWaitedSeconds;
+			if(isFirst || g.TotalWaitedSeconds < BestGenome.TotalWaitedSeconds)
+				BestGenome.TotalWaitedSeconds = g.TotalWaitedSeconds;
 			
-			if(isFirst || g.StandardDeviationRechargedPercent < MinGenome.StandardDeviationRechargedPercent)
-				MinGenome.StandardDeviationRechargedPercent = g.StandardDeviationRechargedPercent;
-			if(isFirst || g.StandardDeviationRechargedPercent > MaxGenome.StandardDeviationRechargedPercent)
-				MaxGenome.StandardDeviationRechargedPercent = g.StandardDeviationRechargedPercent;
+			if(isFirst || g.StandardDeviationRechargedPercent > WorstGenome.StandardDeviationRechargedPercent)
+				WorstGenome.StandardDeviationRechargedPercent = g.StandardDeviationRechargedPercent;
+			if(isFirst || g.StandardDeviationRechargedPercent < BestGenome.StandardDeviationRechargedPercent)
+				BestGenome.StandardDeviationRechargedPercent = g.StandardDeviationRechargedPercent;
 			
-			if(isFirst || g.StandardDeviationWaitedSeconds < MinGenome.StandardDeviationWaitedSeconds)
-				MinGenome.StandardDeviationWaitedSeconds = g.StandardDeviationWaitedSeconds;
-			if(isFirst || g.StandardDeviationWaitedSeconds > MaxGenome.StandardDeviationWaitedSeconds)
-				MaxGenome.StandardDeviationWaitedSeconds = g.StandardDeviationWaitedSeconds;
-			
+			if(isFirst || g.StandardDeviationWaitedSeconds > WorstGenome.StandardDeviationWaitedSeconds)
+				WorstGenome.StandardDeviationWaitedSeconds = g.StandardDeviationWaitedSeconds;
+			if(isFirst || g.StandardDeviationWaitedSeconds < BestGenome.StandardDeviationWaitedSeconds)
+				BestGenome.StandardDeviationWaitedSeconds = g.StandardDeviationWaitedSeconds;
+						
 			isFirst = false;			
 		}
+		
+		count = 1;
 	}
 	
 	private int GetRandomInt(int start, int end)
@@ -295,7 +280,7 @@ public class AgentManager {
 		for(AgentController ac: carList)
 		{
 			CarAgentInterface car = GetCarInterface(ac);
-			if(car.GetStatus() != CarStatus.FullyCharged && car.GetStatus() != CarStatus.IncompleteCharged)
+			if(car.GetStatus() != CarStatus.FullyCharged && car.GetStatus() != CarStatus.IncompleteCharged && car.GetStatus() != CarStatus.Dead)
 				result.add(car);
 		}
 		return result;
@@ -307,12 +292,11 @@ public class AgentManager {
 		return Math.round(d * 100) / a;
 	}
 	
-	private ArrayList<Genome> GetGenomes(Genome bestGenome, JSlider speedSlider, int siblingsInAGeneration)
+	public ArrayList<Genome> GetGenomes(Genome bestGenome, JSlider speedSlider, int siblingsInAGeneration)
 	{
 		ArrayList<Genome> genomes = new ArrayList<Genome>();
 		
-		if(speedSlider != null)
-			Log("RequiredLoadWeight (RLW), TimeToDeadlineWeight (TTDW), WaitedSecondsWeight (WSW)\n" );
+		Log("RequiredLoadWeight (RLW), TimeToDeadlineWeight (TTDW), WaitedSecondsWeight (WSW)\n" );
 		
 		// sibilings
 		for(int i=0; i < siblingsInAGeneration; i++)
@@ -327,16 +311,15 @@ public class AgentManager {
 			
 			ArrayList<String> messages = new ArrayList<String>();
 
-			int randomRequiredLoadWeight = GetRandomInt(50, 500);
-			int randomTimeToDeadlineWeight = GetRandomInt(50, 500);
-			int randomWaitedSecondsWeight = GetRandomInt(50, 500);
+			int randomRequiredLoadWeight = GetRandomInt(-500, 500);
+			int randomTimeToDeadlineWeight = GetRandomInt(-500, 500);
+			int randomWaitedSecondsWeight = GetRandomInt(-500, 500);
 			
 			int requiredLoadWeight = bestGenome != null ? bestGenome.RequiredLoadWeight + (i == 0 ? 0 : GetRandomInt(0, 500) - 250) : randomRequiredLoadWeight ;
 			int timeToDeadlineWeight = bestGenome != null ? bestGenome.TimeToDeadlineWeight + (i == 0 ? 0 : GetRandomInt(0, 500) - 250) : randomTimeToDeadlineWeight;
 			int waitedSecondsWeight = bestGenome != null ? bestGenome.WaitedSecondsWeight + (i == 0 ? 0 : GetRandomInt(0, 500) - 250) : randomWaitedSecondsWeight;
 						
-			if(speedSlider != null)
-				Log("genome[" + i + "]=> (RLW,TTDW,WSW): (" + requiredLoadWeight + "," + timeToDeadlineWeight + "," + waitedSecondsWeight + ")\n" );
+			Log("genome[" + i + "]=> (RLW,TTDW,WSW): (" + requiredLoadWeight + "," + timeToDeadlineWeight + "," + waitedSecondsWeight + ")\n" );
 			
 			TotalElapsedSeconds = 0;
 			//updating
@@ -373,9 +356,16 @@ public class AgentManager {
 							{
 								int carId = outlet.CarIdUsedBy;
 								CarAgentInterface ca = GetCarInterface(carId);
+								
+								if(count == 1)
+								{
+									ca.sendrequest();
+								}
+								
 								if(ca.GetCurrentRequiredLoad() <= 0 || ca.GetDeadline() <= TotalElapsedSeconds)
 								{	
 									outlet.Release();
+									ca.resetcount();
 									ca.EndRecharging();
 								}
 							}
@@ -416,11 +406,11 @@ public class AgentManager {
 				
 				
 				//exit when all outlets not used or no car to recharge
-				if(TotalElapsedSeconds >= 1000 || allBayRunOut || GetCarsNeedingToRecharge().size() == 0)
+				if(allBayRunOut || GetCarsNeedingToRecharge().size() == 0)
 				{
 					//genome
 					genome.TotalTimeElapsed = TotalElapsedSeconds;
-					if(speedSlider != null)
+					//if(speedSlider != null)
 						Log("Charged percents of gen[" + i + "]: ");
 					int sumChargedPercent = 0;
 					int sumRechargedLoad = 0;
@@ -430,7 +420,7 @@ public class AgentManager {
 						CarAgentInterface o2a;
 						try {
 							o2a = carAgent.getO2AInterface(CarAgentInterface.class);
-							if(speedSlider != null)
+							//if(speedSlider != null)
 								Log(o2a.GetChargedPercent() + ", ");
 							sumChargedPercent += o2a.GetChargedPercent();
 							sumWaitedSeconds += o2a.GetWaitedSeconds();
@@ -445,9 +435,13 @@ public class AgentManager {
 					
 					genome.TotalWaitedSeconds = sumWaitedSeconds;
 					
-					if(speedSlider != null)
-						Log("\n");
-					//Log("\nAverage (charged percent, waited Seconds): (" + meanChargedPercent + ", " + meanWaitedSeconds + ")");
+					Log("\n");
+					Log("Charged order: ");
+					for(int id: genome.CarIds)
+					{
+						Log(id + ",");
+					}
+					Log("\n");
 					
 					sumChargedPercent = 0;
 					sumWaitedSeconds = 0;
@@ -465,7 +459,6 @@ public class AgentManager {
 					}				
 					double sqrtRechargedPercent = Math.sqrt(sumChargedPercent / carList.size());
 					double sqrtWaitedSeconds = Math.sqrt(sumWaitedSeconds / carList.size());
-					//Log(", Standard Deviation(SD): " + sqrtRechargedPercent + "\n");
 					genome.StandardDeviationRechargedPercent = Round(sqrtRechargedPercent);
 					genome.StandardDeviationWaitedSeconds = Round(sqrtWaitedSeconds);
 					genome.TotalRechargedLoad = sumRechargedLoad; 
@@ -489,6 +482,9 @@ public class AgentManager {
 							
 							if(carStatus == CarStatus.Pending)
 								o2a.SetStatus(CarStatus.Waiting);
+							
+							if(carStatus == CarStatus.Waiting && o2a.GetDeadline() < TotalElapsedSeconds)
+								o2a.SetStatus(CarStatus.Dead);
 						}	
 
 					} catch (StaleProxyException e) {
@@ -500,6 +496,16 @@ public class AgentManager {
 				try {
 					int v = speedSlider != null ? speedSlider.getValue() : 0;
 					Thread.sleep(v * v);
+					
+					if(speedSlider != null && v == speedSlider.getMaximum())
+					{
+						while(true)
+						{
+							Thread.sleep(1000);
+							if(speedSlider.getValue() != speedSlider.getMaximum())
+								break;
+						}
+					}
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
@@ -511,10 +517,11 @@ public class AgentManager {
 		}
 		return genomes;
 	}
-	
-	public void Run(JSlider speedSlider)
+		
+	public void Run(JSlider speedSlider, double[] weights)
 	{
 		Genome bestGenome = null;
+		GenScores = new ArrayList<Double>();
 				
 		// generations
 		for(int k=0; k < RunningGenerations; k++)
@@ -531,7 +538,7 @@ public class AgentManager {
 						gn.TotalWaitedSeconds + "," + 
 						gn.StandardDeviationRechargedPercent + "," + 
 						gn.StandardDeviationWaitedSeconds + "," +
-						Round(gn.GetScore(MinGenome, MaxGenome)) +
+						Round(gn.GetScore(weights)) +
 						"), ");
 			}
 			Log("\n");
@@ -541,31 +548,29 @@ public class AgentManager {
 			genomes.sort(new Comparator<Genome>() {
 				public int compare(Genome gs1, Genome gs2)
 				{
-					return gs1.GetScore(MinGenome, MaxGenome) > gs2.GetScore(MinGenome, MaxGenome) ? -1 : gs1.GetScore(MinGenome, MaxGenome) < gs2.GetScore(MinGenome, MaxGenome) ? 1 : 0;
+					return gs1.GetScore(weights) > gs2.GetScore(weights) ? -1 : gs1.GetScore(weights) < gs2.GetScore(weights) ? 1 : 0;
 				}
 			});
 			
 			bestGenome = genomes.get(0);
+			
+			GenScores.add(bestGenome.GetScore(weights));
+			
 			Log("Gen["+k+"] best genome (RLW,TTDW,WSW)=>("+
 					bestGenome.RequiredLoadWeight + "," + 
 					bestGenome.TimeToDeadlineWeight + "," +
 					bestGenome.WaitedSecondsWeight +					
 					"): "+ 
-					bestGenome.GetScore(MinGenome, MaxGenome) +"\n");
-			Log("(TTE, TRL, RPSD, TWS, WSSD) => (" + bestGenome.TotalTimeElapsed + "," + bestGenome.TotalRechargedLoad + "," + bestGenome.StandardDeviationRechargedPercent +
-					"," + bestGenome.TotalWaitedSeconds + "," + bestGenome.StandardDeviationWaitedSeconds + ")");
+					bestGenome.GetScore(weights) +"\n");
+			Log("(TTE, TRL, TWS, RPSD, WSSD) => (" + bestGenome.TotalTimeElapsed + "," + bestGenome.TotalRechargedLoad + "," + bestGenome.TotalWaitedSeconds + 
+					"," + bestGenome.StandardDeviationRechargedPercent + "," + bestGenome.StandardDeviationWaitedSeconds + ")");
 			
 			genomes.clear();
 			
 			// end of generation
-			Log("\n");
+			Log("\n");			
 		}
 	}
-//	
-//	private void PrintGenomeInfo(ArrayList<Genome> g, int genIndex)
-//	{
-//		
-//	}
 	
 	Car GetCar(AgentController carAgent)
 	{
@@ -624,5 +629,11 @@ public class AgentManager {
 	public int GetTotalElapsedSeconds()
 	{
 		return TotalElapsedSeconds;
+	}
+	
+
+	public ArrayList<Double> GetGenScore()
+	{
+		return GenScores;
 	}
 }

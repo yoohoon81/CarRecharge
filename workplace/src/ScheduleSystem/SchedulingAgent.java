@@ -2,15 +2,12 @@ package ScheduleSystem;
 
 import java.util.ArrayList;
 
-import com.sun.glass.ui.View.Capability;
-
 import jade.core.Agent;
-import jade.core.behaviours.Behaviour;
-import jade.core.behaviours.WakerBehaviour;
-import jade.core.behaviours.TickerBehaviour;
+import jade.lang.acl.ACLMessage;
 import jade.core.behaviours.*;
 
 
+@SuppressWarnings("serial")
 public class SchedulingAgent extends Agent implements ISchedulingAgent {
 	
 	ArrayList<Bay> bays;
@@ -22,7 +19,6 @@ public class SchedulingAgent extends Agent implements ISchedulingAgent {
 	protected void setup() {
 		System.out.println(getLocalName() + ": I have been created");
 		
-		//numberOfBaysTextField.getText(), bayCapacityTextField.getText(), outletPerBayTextField.getText()
 		Object[] args = getArguments();
 		int numberOfBays = Integer.parseInt(args[0].toString());
 		int bayCapacity = Integer.parseInt(args[1].toString());
@@ -33,10 +29,23 @@ public class SchedulingAgent extends Agent implements ISchedulingAgent {
 		
 		CyclicBehaviour cb = new CyclicBehaviour(this) {
 			public void action() {
-				
-				System.out.println("Action CyclicBehaviour of SchedulingAgent.");
-				
 				try {
+					ACLMessage msg = receive();
+					
+					if (msg != null) {																							
+						if(msg.getPerformative() == 16)																	
+						{																																											
+							ACLMessage fwd = msg.createReply();														
+							fwd.setPerformative(ACLMessage.ACCEPT_PROPOSAL);
+							System.out.println(msg.getContent());	
+							
+							send(fwd);																																																																		
+
+						}
+					}
+					block();
+
+					
 					Thread.sleep(3000);
 				} catch (InterruptedException e) {
 					// TODO Auto-generated catch block
@@ -45,7 +54,7 @@ public class SchedulingAgent extends Agent implements ISchedulingAgent {
 			}
 		};
 		
-		//addBehaviour(cb);
+		addBehaviour(cb);
 	}
 
 	@Override

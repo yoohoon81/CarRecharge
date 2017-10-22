@@ -5,5 +5,6 @@ public enum CarStatus {
 	Waiting,
 	Recharging,
 	IncompleteCharged,
-	FullyCharged	
+	FullyCharged,
+	Dead
 }

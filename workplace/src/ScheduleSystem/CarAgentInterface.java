@@ -17,4 +17,6 @@ public interface CarAgentInterface {
 	public CarStatus GetStatus(); 
 	public void SetStatus(CarStatus status);
 	public void Set(int startTime, int deadline, int requiredLoad); 
+	public void sendrequest();
+	public void resetcount();
 }

@@ -1,6 +1,10 @@
 package ScheduleSystem;
 
+import java.util.concurrent.ThreadLocalRandom;
+
+import jade.core.AID;
 import jade.core.Agent;
+import jade.lang.acl.ACLMessage;
 
 public class CarAgent extends Agent implements CarAgentInterface {
 	
@@ -13,6 +17,8 @@ public class CarAgent extends Agent implements CarAgentInterface {
 	private int WaitedSeconds;
 	public boolean BeingRecharged;
 	public CarStatus CarStatus;
+
+	private int count;
 	
 	public CarAgent() {
 		registerO2AInterface(CarAgentInterface.class, this);	
@@ -22,16 +28,21 @@ public class CarAgent extends Agent implements CarAgentInterface {
 	// (BY) Generate car and set values of car property
 	protected void setup() {
 		
+
 		Object[] args = getArguments();
 		System.out.println("Starting up a CarAgent" + args[0]);
 		Id = Integer.parseInt(args[0].toString());
-		InitialRequiredLoad = Integer.parseInt(args[1].toString());
-		CurrentRequiredLoad = Integer.parseInt(args[1].toString());
-		StartTime = Integer.parseInt(args[2].toString());
-		Deadline = Integer.parseInt(args[3].toString());
-		CarStatus = ScheduleSystem.CarStatus.Pending;
+		InitialRequiredLoad = GetRandomInt(25, 500);
+		CurrentRequiredLoad = InitialRequiredLoad;
+		StartTime = GetRandomInt(0, 500);
+		Deadline = StartTime +	GetRandomInt(100, 500);		
 	}
 
+	private int GetRandomInt(int start, int end)
+	{
+		return ThreadLocalRandom.current().nextInt(start, end);
+	}
+	
 	@Override
 	public int GetDeadline() {
 		return Deadline;
@@ -122,5 +133,37 @@ public class CarAgent extends Agent implements CarAgentInterface {
 		InitialRequiredLoad = requiredLoad;
 	}
 	
+	@Override
+	public void sendrequest()
+	{
+		if(count == 0)
+		{
+			ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);	
+			msg.addReceiver(new AID("SchedulingAgent", AID.ISLOCALNAME));
+			msg.setContent(getLocalName() + " :  need to charge " + InitialRequiredLoad + "	need to start from " + StartTime + " to " + Deadline );	
+			msg.setSender(getAID());
+
+			send(msg);
+			count++;
+		}
+		
+//		if(count == 0)
+//		{
+//			ACLMessage msg = new ACLMessage(ACLMessage.REQUEST);	
+//			msg.addReceiver(new AID("SchedulingAgent", AID.ISLOCALNAME));
+//			msg.setContent(getLocalName() + " :  Request charging...");	
+//			System.out.println(msg.getContent());
+//			
+//			send(msg);
+//			count++;
+//		}
+		
+	}
+	
+	@Override
+	public void resetcount()
+	{
+		count = 0;
+	}
 	
 }
